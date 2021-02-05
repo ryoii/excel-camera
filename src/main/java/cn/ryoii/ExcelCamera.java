@@ -17,9 +17,9 @@ import java.util.List;
 /**
  * @author ryoii
  */
-public class SnipShotPrinter {
+public class ExcelCamera {
 
-    private final SnipShotConfig config;
+    private final ExcelCameraConfig config;
     private List<CellRangeAddress> rangeAddress;
     private final List<Grid> grids;
 
@@ -30,7 +30,7 @@ public class SnipShotPrinter {
 
     private final UserCell[][] cells;
 
-    public SnipShotPrinter(SnipShotConfig config) {
+    public ExcelCamera(ExcelCameraConfig config) {
         this.config = config;
         this.rowSize = config.getRowTo() - config.getRowFrom();
         this.colSize = config.getColTo() - config.getColFrom();

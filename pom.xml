@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.ryoii</groupId>
-    <artifactId>snipshot-excel</artifactId>
+    <artifactId>excel-camera</artifactId>
     <version>0.0.1</version>
 
     <properties>
