@@ -26,11 +26,12 @@ class Grid {
     private int row;
     private int col;
     private int border;
-    private boolean middle;
+    private int align;
 
     private HSSFColor ftColor;
     private HSSFColor bgColor;
     private HSSFFont font;
+    private double fontZoom;
     private String text;
 
     public Color getAwtBgColor() {
@@ -128,7 +129,16 @@ class Grid {
                 strCell = "";
         }
 
-        this.middle = cell.getCellStyle().getAlignment() == HorizontalAlignment.CENTER;
+        switch (cell.getCellStyle().getAlignment()) {
+            case RIGHT:
+                align = 1;
+                break;
+            case CENTER:
+                align = 0;
+                break;
+            default:
+                align = -1;
+        }
 
         if (cell.getCellStyle().getDataFormatString().contains("0.00%")) {
             try {
@@ -205,12 +215,12 @@ class Grid {
         this.border = border;
     }
 
-    public boolean isMiddle() {
-        return middle;
+    public int getAlign() {
+        return align;
     }
 
-    public void setMiddle(boolean middle) {
-        this.middle = middle;
+    public void setAlign(int align) {
+        this.align = align;
     }
 
     public HSSFColor getFtColor() {
@@ -237,12 +247,53 @@ class Grid {
         this.font = font;
     }
 
+    public double getFontZoom() {
+        return fontZoom;
+    }
+
+    public Grid setFontZoom(double fontZoom) {
+        this.fontZoom = fontZoom;
+        return this;
+    }
+
     public String getText() {
         return text;
     }
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public boolean hashBorderTop() {
+        return (border & 0x01) != 0;
+    }
+
+    public void setBorderTop() {
+        border |= 0x01;
+    }
+
+    public boolean hashBorderRight() {
+        return (border & 0x02) != 0;
+    }
+
+    public void setBorderRight() {
+        border |= 0x02;
+    }
+
+    public boolean hashBorderBottom() {
+        return (border & 0x04) != 0;
+    }
+
+    public void setBorderBottom() {
+        border |= 0x04;
+    }
+
+    public boolean hashBorderLeft() {
+        return (border & 0x08) != 0;
+    }
+
+    public void setBorderLeft() {
+        border |= 0x08;
     }
 }
 

@@ -1,14 +1,14 @@
 package cn.ryoii;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import sun.awt.SunHints;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.channels.Channels;
@@ -60,55 +60,52 @@ public class ExcelCamera {
     public OutputStream asOutputStream() throws Exception {
         Workbook wb = new HSSFWorkbook(config.createInputStream());
         Sheet sheet = wb.getSheet(config.sheetName());
+        wb.close();
 
         // merged regions
         rangeAddress = sheet.getMergedRegions();
 
         for (int i = 0; i < rowSize; i++) {
+            float currentRowWidth = 0;
+
             // skip empty row
             Row row = sheet.getRow(i + config.rowFrom());
             if (row == null) {
+                imageHeight += sheet.getDefaultRowHeightInPoints() * config.colZoom();
                 continue;
             }
 
             // calculate height
-            float heightPx = row.getHeightInPoints();
-            imageHeight += heightPx;
+            double heightPx = row.getHeightInPoints() * config.colZoom();
 
             for (int j = 0; j < colSize; j++) {
                 UserCell cell = UserCell.build(sheet, i + config.rowFrom(), j + config.colFrom());
                 cells[i][j] = cell;
 
                 // calculate width
-                float widthPx = sheet.getColumnWidthInPixels(j + config.colFrom());
-                if (i == 0) {
-                    imageWidth += widthPx;
-                    cell.setTop(0);
-                    cell.setBottom((int) (heightPx * config.rowZoom()));
-                } else {
-                    int preBottom = cells[i - 1][j].getBottom();
-                    cell.setTop(preBottom);
-                    cell.setBottom((int) (heightPx * config.rowZoom() + preBottom));
-                }
-                if (j == 0) {
-                    cell.setLeft(0);
-                    cell.setRight((int) (widthPx * config.colZoom()));
-                } else {
-                    int preRight = cells[i][j - 1].getRight();
-                    cell.setLeft(preRight);
-                    cell.setRight((int) (widthPx * config.colZoom() + preRight));
-                }
+                double widthPx = sheet.getColumnWidthInPixels(j + config.colFrom()) * config.rowZoom();
+
+                // set cell position
+                cell.setTop(imageHeight);
+                cell.setBottom((int) (heightPx + imageHeight));
+                cell.setLeft((int) currentRowWidth);
+                cell.setRight((int) (widthPx + currentRowWidth));
+
+                currentRowWidth += widthPx * config.rowZoom();
             }
+
+            imageHeight += heightPx;
+            imageWidth = Math.max(imageWidth, (int) currentRowWidth);
         }
 
-        imageWidth = (int) (imageWidth * config.colZoom());
-        imageHeight = (int) (imageHeight * config.rowZoom());
-        wb.close();
-
-
+        // gen grid
         for (int i = 0; i < rowSize; i++) {
             for (int j = 0; j < colSize; j++) {
+                if (cells[i][j] == null) {
+                    continue;
+                }
                 Grid grid = Grid.build(wb, cells[i][j]);
+                grid.setFontZoom(config.colZoom());
                 // is merged cell ?
                 int[] isInMergedStatus = isInMerged(grid.getRow(), grid.getCol());
 
@@ -122,6 +119,14 @@ public class ExcelCamera {
 
                     grid.setWidth(cells[i][lastColPos].getRight() - grid.getX());
                     grid.setHeight(cells[lastRowPos][j].getBottom() - grid.getY());
+                    // merge border
+                    CellStyle lastCellStyle = cells[lastRowPos][lastColPos].getCell().getCellStyle();
+                    if (lastCellStyle.getBorderRight() != BorderStyle.NONE) {
+                        grid.setBorderRight();
+                    }
+                    if (lastCellStyle.getBorderBottom() != BorderStyle.NONE) {
+                        grid.setBorderBottom();
+                    }
                 } // else: empty cell
 
                 grids.add(grid);
@@ -149,23 +154,25 @@ public class ExcelCamera {
         // draw the grid
         for (Grid g : grids) {
             // fill cell background color
-            g2d.setColor(g.getBgColor() == null ? java.awt.Color.white : g.getAwtBgColor());
-            g2d.fillRect(g.getX(), g.getY(), g.getWidth(), g.getHeight());
+            if (g.getBgColor() != null) {
+                g2d.setColor(g.getBgColor() == null ? java.awt.Color.white : g.getAwtBgColor());
+                g2d.fillRect(g.getX(), g.getY(), g.getWidth(), g.getHeight());
 
+            }
             // draw the border
             g2d.setColor(Color.black);
             g2d.setStroke(new BasicStroke(1));
 
-            if ((g.getBorder() & 0x01) != 0) {
+            if (g.hashBorderTop()) {
                 g2d.drawLine(g.getX(), g.getY() - 1, g.getX() + g.getWidth() - 1, g.getY() - 1);
             }
-            if ((g.getBorder() & 0x02) != 0) {
+            if (g.hashBorderRight()) {
                 g2d.drawLine(g.getX() + g.getWidth() - 1, g.getY(), g.getX() + g.getWidth() - 1, g.getY() + g.getHeight() - 1);
             }
-            if ((g.getBorder() & 0x04) != 0) {
+            if (g.hashBorderBottom()) {
                 g2d.drawLine(g.getX(), g.getY() + g.getHeight() - 1, g.getX() + g.getWidth() - 1, g.getY() + g.getHeight() - 1);
             }
-            if ((g.getBorder() & 0x08) != 0) {
+            if (g.hashBorderLeft()) {
                 g2d.drawLine(g.getX() - 1, g.getY(), g.getX() - 1, g.getY() + g.getHeight() - 1);
             }
 
@@ -180,10 +187,16 @@ public class ExcelCamera {
 
                 // is text-align center
                 int x;
-                if (g.isMiddle()) {
-                    x = g.getX() + (g.getWidth() - strWidth) / 2 - 1;
-                } else {
-                    x = g.getX() + (g.getWidth() - strWidth - 1);
+                switch (g.getAlign()) {
+                    case 1:
+                        x = g.getX() + (g.getWidth() - strWidth - 1);
+                        break;
+                    case 0:
+                        x = g.getX() + (g.getWidth() - strWidth) / 2 - 1;
+                        break;
+                    default:
+                        x = g.getX();
+                        break;
                 }
                 g2d.drawString(g.getText(), x,
                         g.getY() + (g.getHeight() - font.getSize()) / 2 + font.getSize());
