@@ -1,14 +1,12 @@
 package cn.ryoii;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import sun.awt.SunHints;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.Color;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.channels.Channels;
@@ -58,8 +56,11 @@ public class ExcelCamera {
     }
 
     public OutputStream asOutputStream() throws Exception {
-        Workbook wb = new HSSFWorkbook(config.createInputStream());
+        Workbook wb = WorkbookFactory.create(config.createInputStream());
         Sheet sheet = wb.getSheet(config.sheetName());
+        if (sheet == null) {
+            throw new RuntimeException("Couldn't find sheet " + config.sheetName());
+        }
         wb.close();
 
         // merged regions

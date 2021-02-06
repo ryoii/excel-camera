@@ -1,13 +1,12 @@
 package cn.ryoii;
 
-
 import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.text.DecimalFormat;
 
 /**
@@ -26,34 +25,46 @@ class Grid {
     private int border;
     private int align;
 
-    private HSSFColor ftColor;
-    private HSSFColor bgColor;
-    private HSSFFont font;
+    private org.apache.poi.ss.usermodel.Color ftColor;
+    private org.apache.poi.ss.usermodel.Color bgColor;
+    private org.apache.poi.ss.usermodel.Font font;
     private double fontZoom;
     private String text;
 
-    public Color getAwtBgColor() {
+    public java.awt.Color getAwtBgColor() {
         return bgColor == null ? null : getAwtColor(bgColor);
     }
 
-    public Color getAwtFtColor() {
+    public java.awt.Color getAwtFtColor() {
         return ftColor == null ? null : getAwtColor(ftColor);
     }
 
-    public Font getAwtFnt() {
+    public java.awt.Font getAwtFnt() {
         if (font == null) {
             return null;
         }
-        return new Font(
+        return new java.awt.Font(
                 this.font.getFontName(),
-                Font.PLAIN,
+                java.awt.Font.PLAIN,
                 (int) (this.fontZoom * this.font.getFontHeightInPoints())
         );
     }
 
-    private Color getAwtColor(HSSFColor color) {
-        short[] triplet = color.getTriplet();
-        return new Color(triplet[0], triplet[1], triplet[2]);
+    private java.awt.Color getAwtColor(Color color) {
+        int[] rgb = getRgb(color);
+        return new java.awt.Color(rgb[0], rgb[1], rgb[2]);
+    }
+
+    private int[] getRgb(org.apache.poi.ss.usermodel.Color color) {
+        int[] res = new int[]{0, 0, 0};
+        if (color instanceof HSSFColor) {
+            short[] rgb = ((HSSFColor) color).getTriplet();
+            res = new int[]{rgb[0] & 0xFF, rgb[1] & 0xFF, rgb[2] & 0xFF};
+        } else if (color instanceof XSSFColor) {
+            byte[] rgb = ((XSSFColor) color).getRGBWithTint();
+            res = new int[]{rgb[0] & 0xFF, rgb[1] & 0xFF, rgb[2] & 0xFF};
+        }
+        return res;
     }
 
     public static Grid build(Workbook workbook, UserCell cell) {
@@ -80,7 +91,7 @@ class Grid {
     private void backgroundColor(Cell cell) {
         CellStyle cs = cell.getCellStyle();
         if (cs.getFillPattern() == FillPatternType.SOLID_FOREGROUND) {
-            bgColor = (HSSFColor) cs.getFillForegroundColorColor();
+            bgColor = cs.getFillForegroundColorColor();
         }
     }
 
@@ -103,9 +114,13 @@ class Grid {
     private void font(Cell cell) {
         CellStyle cs = cell.getCellStyle();
 
-        org.apache.poi.ss.usermodel.Font font = workbook.getFontAt(cs.getFontIndex());
-        this.font = (HSSFFont) font;
-        ftColor = this.font.getHSSFColor((HSSFWorkbook) cell.getSheet().getWorkbook());
+        this.font = workbook.getFontAt(cs.getFontIndex());
+        if (font instanceof HSSFFont) {
+            ftColor = ((HSSFFont) this.font).getHSSFColor((HSSFWorkbook) cell.getSheet().getWorkbook());
+        } else if (font instanceof XSSFFont) {
+            ftColor = ((XSSFFont) this.font).getXSSFColor();
+        }
+
     }
 
     private void text(Cell cell) {
@@ -225,7 +240,7 @@ class Grid {
         this.align = align;
     }
 
-    public HSSFColor getFtColor() {
+    public Color getFtColor() {
         return ftColor;
     }
 
@@ -233,7 +248,7 @@ class Grid {
         this.ftColor = ftColor;
     }
 
-    public HSSFColor getBgColor() {
+    public Color getBgColor() {
         return bgColor;
     }
 
@@ -241,7 +256,7 @@ class Grid {
         this.bgColor = bgColor;
     }
 
-    public HSSFFont getFont() {
+    public org.apache.poi.ss.usermodel.Font getFont() {
         return font;
     }
 
