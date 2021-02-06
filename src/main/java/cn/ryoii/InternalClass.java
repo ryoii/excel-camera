@@ -5,8 +5,6 @@ import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.apache.poi.xssf.usermodel.XSSFFont;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -46,7 +44,11 @@ class Grid {
         if (font == null) {
             return null;
         }
-        return new Font(this.font.getFontName(), Font.PLAIN, this.font.getFontHeightInPoints());
+        return new Font(
+                this.font.getFontName(),
+                Font.PLAIN,
+                (int) (this.fontZoom * this.font.getFontHeightInPoints())
+        );
     }
 
     private Color getAwtColor(HSSFColor color) {
