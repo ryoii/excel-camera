@@ -2,11 +2,17 @@
 
 简体中文 | [English](README_EN.md)
 
-将Excel生成为图片
+将 Excel 生成为图片
 
 ## 原理
 
 使用 Apache Poi 读取并解析 Excel 文件，利用 `BufferedImage` 绘制单元格
+
+## 预览
+
+![origin](pic/origin.png)
+
+![example](pic/example.png)
 
 ## 支持程度（TODOLIST）
 

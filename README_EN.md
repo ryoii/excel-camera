@@ -4,9 +4,15 @@
 
 Generate the picture of excel
 
-## 原理
+## Introduction
 
 Read and parse the Excel file with Apache Poi，and draw the picture with `BufferedImage`.
+
+## Snapshot
+
+![origin](pic/origin.png)
+
+![example](pic/example.png)
 
 ## TODOLIST
 
