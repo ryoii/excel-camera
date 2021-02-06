@@ -1,9 +1,9 @@
 package cn.ryoii;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellRangeAddress;
 import sun.awt.SunHints;
 
@@ -11,6 +11,8 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ import java.util.List;
  */
 public class ExcelCamera {
 
-    private final ExcelCameraConfig config;
+    private final ExcelCameraConfiguration config;
     private List<CellRangeAddress> rangeAddress;
     private final List<Grid> grids;
 
@@ -30,25 +32,41 @@ public class ExcelCamera {
 
     private final UserCell[][] cells;
 
-    public ExcelCamera(ExcelCameraConfig config) {
+    public ExcelCamera(ExcelCameraConfiguration config) {
         this.config = config;
-        this.rowSize = config.getRowTo() - config.getRowFrom();
-        this.colSize = config.getColTo() - config.getColFrom();
+        this.rowSize = config.rowTo() - config.rowFrom();
+        this.colSize = config.colTo() - config.colFrom();
         this.grids = new ArrayList<>(this.colSize * this.rowSize);
 
         this.cells = new UserCell[rowSize][colSize];
     }
 
-    public InputStream toImageStream() throws Exception {
-        Workbook wb = WorkbookFactory.create(new File(config.getFileName()));
-        Sheet sheet = wb.getSheet(config.getSheetName());
+    public File asImageFile(String path) throws Exception {
+        File file = new File(path);
+        try (InputStream is = asInputStream();
+             FileOutputStream fos = new FileOutputStream(file);
+             ReadableByteChannel channel = Channels.newChannel(is)) {
+
+            fos.getChannel().transferFrom(channel, 0, is.available());
+        }
+        return file;
+    }
+
+    public InputStream asInputStream() throws Exception {
+        ByteArrayOutputStream os = (ByteArrayOutputStream) asOutputStream();
+        return new ByteArrayInputStream(os.toByteArray());
+    }
+
+    public OutputStream asOutputStream() throws Exception {
+        Workbook wb = new HSSFWorkbook(config.createInputStream());
+        Sheet sheet = wb.getSheet(config.sheetName());
 
         // merged regions
         rangeAddress = sheet.getMergedRegions();
 
         for (int i = 0; i < rowSize; i++) {
             // skip empty row
-            Row row = sheet.getRow(i + config.getRowFrom());
+            Row row = sheet.getRow(i + config.rowFrom());
             if (row == null) {
                 continue;
             }
@@ -58,33 +76,33 @@ public class ExcelCamera {
             imageHeight += heightPx;
 
             for (int j = 0; j < colSize; j++) {
-                UserCell cell = UserCell.build(sheet, i + config.getRowFrom(), j + config.getColFrom());
+                UserCell cell = UserCell.build(sheet, i + config.rowFrom(), j + config.colFrom());
                 cells[i][j] = cell;
 
                 // calculate width
-                float widthPx = sheet.getColumnWidthInPixels(j + config.getColFrom());
+                float widthPx = sheet.getColumnWidthInPixels(j + config.colFrom());
                 if (i == 0) {
                     imageWidth += widthPx;
                     cell.setTop(0);
-                    cell.setBottom((int) (heightPx * config.getRowZoom()));
+                    cell.setBottom((int) (heightPx * config.rowZoom()));
                 } else {
                     int preBottom = cells[i - 1][j].getBottom();
                     cell.setTop(preBottom);
-                    cell.setBottom((int) (heightPx * config.getRowZoom() + preBottom));
+                    cell.setBottom((int) (heightPx * config.rowZoom() + preBottom));
                 }
                 if (j == 0) {
                     cell.setLeft(0);
-                    cell.setRight((int) (widthPx * config.getColZoom()));
+                    cell.setRight((int) (widthPx * config.colZoom()));
                 } else {
                     int preRight = cells[i][j - 1].getRight();
                     cell.setLeft(preRight);
-                    cell.setRight((int) (widthPx * config.getColZoom() + preRight));
+                    cell.setRight((int) (widthPx * config.colZoom() + preRight));
                 }
             }
         }
 
-        imageWidth = (int) (imageWidth * config.getColZoom());
-        imageHeight = (int) (imageHeight * config.getRowZoom());
+        imageWidth = (int) (imageWidth * config.colZoom());
+        imageHeight = (int) (imageHeight * config.rowZoom());
         wb.close();
 
 
@@ -110,10 +128,10 @@ public class ExcelCamera {
             }
         }
 
-        return getImageStream();
+        return drawPic();
     }
 
-    private InputStream getImageStream() throws IOException {
+    private OutputStream drawPic() throws IOException {
         BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = image.createGraphics();
         // smooth font setting
@@ -176,7 +194,7 @@ public class ExcelCamera {
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ImageIO.write(image, "png", bos);
-        return new ByteArrayInputStream(bos.toByteArray());
+        return bos;
     }
 
 

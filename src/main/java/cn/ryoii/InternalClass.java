@@ -1,6 +1,9 @@
 package cn.ryoii;
 
 
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -25,9 +28,9 @@ class Grid {
     private int border;
     private boolean middle;
 
-    private XSSFColor ftColor;
-    private XSSFColor bgColor;
-    private XSSFFont font;
+    private HSSFColor ftColor;
+    private HSSFColor bgColor;
+    private HSSFFont font;
     private String text;
 
     public Color getAwtBgColor() {
@@ -45,13 +48,9 @@ class Grid {
         return new Font(this.font.getFontName(), Font.PLAIN, this.font.getFontHeightInPoints());
     }
 
-    private Color getAwtColor(XSSFColor color) {
-        byte[] bytes = color.getRGB();
-        int rgb = 0;
-        for (byte b : bytes) {
-            rgb = (rgb << 8) | b;
-        }
-        return new Color(rgb);
+    private Color getAwtColor(HSSFColor color) {
+        short[] triplet = color.getTriplet();
+        return new Color(triplet[0], triplet[1], triplet[2]);
     }
 
     public static Grid build(Workbook workbook, UserCell cell) {
@@ -78,7 +77,7 @@ class Grid {
     private void backgroundColor(Cell cell) {
         CellStyle cs = cell.getCellStyle();
         if (cs.getFillPattern() == FillPatternType.SOLID_FOREGROUND) {
-            bgColor = (XSSFColor) cs.getFillForegroundColorColor();
+            bgColor = (HSSFColor) cs.getFillForegroundColorColor();
         }
     }
 
@@ -102,8 +101,8 @@ class Grid {
         CellStyle cs = cell.getCellStyle();
 
         org.apache.poi.ss.usermodel.Font font = workbook.getFontAt(cs.getFontIndex());
-        this.font = (XSSFFont) font;
-        ftColor = this.font.getXSSFColor();
+        this.font = (HSSFFont) font;
+        ftColor = this.font.getHSSFColor((HSSFWorkbook) cell.getSheet().getWorkbook());
     }
 
     private void text(Cell cell) {
@@ -214,27 +213,27 @@ class Grid {
         this.middle = middle;
     }
 
-    public XSSFColor getFtColor() {
+    public HSSFColor getFtColor() {
         return ftColor;
     }
 
-    public void setFtColor(XSSFColor ftColor) {
+    public void setFtColor(HSSFColor ftColor) {
         this.ftColor = ftColor;
     }
 
-    public XSSFColor getBgColor() {
+    public HSSFColor getBgColor() {
         return bgColor;
     }
 
-    public void setBgColor(XSSFColor bgColor) {
+    public void setBgColor(HSSFColor bgColor) {
         this.bgColor = bgColor;
     }
 
-    public XSSFFont getFont() {
+    public HSSFFont getFont() {
         return font;
     }
 
-    public void setFont(XSSFFont font) {
+    public void setFont(HSSFFont font) {
         this.font = font;
     }
 
