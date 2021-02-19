@@ -45,7 +45,8 @@ class Grid {
     private int row;
     private int col;
     private int border;
-    private int align;
+    private HorizontalAlignment horizontalAlign;
+    private VerticalAlignment verticalAlignment;
 
     private org.apache.poi.ss.usermodel.Color ftColor;
     private org.apache.poi.ss.usermodel.Color bgColor;
@@ -168,16 +169,8 @@ class Grid {
                 strCell = "";
         }
 
-        switch (cell.getCellStyle().getAlignment()) {
-            case RIGHT:
-                align = 1;
-                break;
-            case CENTER:
-                align = 0;
-                break;
-            default:
-                align = -1;
-        }
+        horizontalAlign = cell.getCellStyle().getAlignment();
+        verticalAlignment = cell.getCellStyle().getVerticalAlignment();
 
         if (cell.getCellStyle().getDataFormatString().contains("0.00%")) {
             try {
@@ -254,12 +247,22 @@ class Grid {
         this.border = border;
     }
 
-    public int getAlign() {
-        return align;
+    public HorizontalAlignment getHorizontalAlign() {
+        return horizontalAlign;
     }
 
-    public void setAlign(int align) {
-        this.align = align;
+    public Grid setHorizontalAlign(HorizontalAlignment horizontalAlign) {
+        this.horizontalAlign = horizontalAlign;
+        return this;
+    }
+
+    public VerticalAlignment getVerticalAlignment() {
+        return verticalAlignment;
+    }
+
+    public Grid setVerticalAlignment(VerticalAlignment verticalAlignment) {
+        this.verticalAlignment = verticalAlignment;
+        return this;
     }
 
     public Color getFtColor() {

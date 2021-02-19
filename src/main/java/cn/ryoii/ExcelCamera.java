@@ -25,6 +25,7 @@ package cn.ryoii;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import sun.awt.SunHints;
+import sun.font.FontDesignMetrics;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
@@ -209,20 +210,30 @@ public class ExcelCamera {
                 g2d.setFont(font);
 
                 // is text-align center
-                int x;
-                switch (g.getAlign()) {
-                    case 1:
-                        x = g.getX() + (g.getWidth() - strWidth - 1);
+                int x, y;
+                switch (g.getHorizontalAlign()) {
+                    case RIGHT:
+                        x = g.getX() + (g.getWidth() - strWidth - 2);
                         break;
-                    case 0:
-                        x = g.getX() + (g.getWidth() - strWidth) / 2 - 1;
+                    case CENTER:
+                        x = g.getX() + (g.getWidth() - strWidth - 1) / 2;
                         break;
                     default:
-                        x = g.getX();
+                        x = g.getX() + 1;
                         break;
                 }
-                g2d.drawString(g.getText(), x,
-                        g.getY() + (g.getHeight() - font.getSize()) / 2 + font.getSize());
+                switch (g.getVerticalAlignment()) {
+                    case TOP:
+                        y = g.getY() + fm.getAscent() + 1;
+                        break;
+                    case BOTTOM:
+                        y = g.getY() + g.getHeight() - font.getSize() + fm.getAscent() - fm.getDescent() - 2;
+                        break;
+                    default:
+                        y = g.getY() + (g.getHeight() + font.getSize() - 1) / 2 - fm.getDescent();
+                        break;
+                }
+                g2d.drawString(g.getText(), x, y);
             }
         }
 

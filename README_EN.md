@@ -73,7 +73,7 @@ public class ExampleTest {
 + [X] Font size
 + [X] Font Color
 + [X] Text horizontal align
-+ [ ] Text vertical align
++ [X] Text vertical align
 + [ ] Line breaker and text wrap
 + [ ] auto size
 

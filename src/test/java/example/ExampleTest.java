@@ -35,7 +35,7 @@ public class ExampleTest {
         File file = new File("excel/example.xlsx");
         ExcelCameraConfiguration configuration = new ExcelCameraConfiguration(file);
         configuration
-                .rowTo(12).colTo(13)
+                .rowTo(18).colTo(13)
                 .rowZoom(1.1).colZoom(1.1)
                 .sheetName("example sheet");
         ExcelCamera excelCamera = new ExcelCamera(configuration);
